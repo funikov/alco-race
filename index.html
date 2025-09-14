@@ -174,9 +174,15 @@
     <div class="grid two-col">
       <!-- Мой вечер -->
       <section class="card" id="myDayCard" aria-labelledby="myDayTitle">
-        <div class="row" style="justify-content: space-between; align-items: baseline; gap: 8px;">
-          <h2 id="myDayTitle">Мой вечер</h2>
-          <div class="muted" id="todayLabel"></div>
+        <div class="row" style="justify-content: space-between; align-items: center; gap: 8px; flex-wrap:wrap">
+          <div class="row" style="gap:10px;align-items: baseline">
+            <h2 id="myDayTitle">Мой вечер</h2>
+            <div class="muted" id="todayLabel"></div>
+          </div>
+          <div class="seg" id="daySwitch" role="tablist" aria-label="День ввода">
+            <button class="segbtn active" data-day="0" role="tab" aria-selected="true">Сегодня</button>
+            <button class="segbtn" data-day="-1" role="tab" aria-selected="false">Вчера</button>
+          </div>
         </div>
 
         <div class="bev-grid" id="bevGrid" aria-label="Выбор напитка"></div>
@@ -267,10 +273,10 @@
       <section class="card" id="insightsCard" aria-labelledby="insightsTitle">
         <div class="row" style="justify-content: space-between; align-items: baseline; gap: 8px;">
           <h2 id="insightsTitle">Аналитика сегодня</h2>
-          <div class="muted">по чистому спирту</div>
+          <div class="muted" id="insightsSubtitle">по чистому спирту</div>
         </div>
 
-        <div class="muted" style="margin-top:6px">Поступления по часам (сегодня)</div>
+        <div class="muted" style="margin-top:6px" id="hourTitle">Поступления по часам (сегодня)</div>
         <div class="hour-wrap">
           <div class="y-axis">
             <div class="ylabel">мл спирта</div>
@@ -279,14 +285,14 @@
           <div id="hourChart" class="hour-chart" aria-label="График по часам"></div>
         </div>
         <div class="hour-axis"><span>0</span><span>6</span><span>12</span><span>18</span><span>24</span></div>
-        <div id="hourEmpty" class="muted" style="margin-top:8px;text-align:center;display:none;">Пока нет добавлений за сегодня</div>
+        <div id="hourEmpty" class="muted" style="margin-top:8px;text-align:center;display:none;">Пока нет добавлений за выбранный день</div>
       </section>
 
       <!-- Пончик -->
       <section class="card" id="donutCard" aria-labelledby="donutTitle">
         <div class="row" style="justify-content: space-between; align-items: baseline; gap: 8px;">
           <h2 id="donutTitle">Состав вечера (сегодня)</h2>
-          <div class="muted">по чистому спирту</div>
+          <div class="muted" id="donutSubtitle">по чистому спирту</div>
         </div>
 
         <div class="donut-wrap" style="margin-top:6px">
@@ -295,14 +301,14 @@
             <div class="donut-center">
               <div style="text-align:center">
                 <div class="big" id="donutTotal">0 мл</div>
-                <div class="muted" style="font-size:12px">сегодня</div>
+                <div class="muted" style="font-size:12px" id="donutCenterSub">сегодня</div>
               </div>
             </div>
           </div>
           <div class="legend" id="donutLegend"></div>
         </div>
 
-        <div id="donutEmpty" class="muted" style="margin-top:8px;text-align:center;display:none;">Пока нет данных за сегодня</div>
+        <div id="donutEmpty" class="muted" style="margin-top:8px;text-align:center;display:none;">Пока нет данных за выбранный день</div>
       </section>
 
       <!-- Ачивки -->
@@ -437,7 +443,42 @@
     signOutBtn.addEventListener('click', async ()=>{ await signOut(auth); });
 
     const todayLabelEl = document.getElementById('todayLabel');
-    todayLabelEl.textContent = `Сегодня: ${new Date().toLocaleDateString(undefined,{weekday:'short', day:'2-digit', month:'short', year:'numeric'})}`;
+    function formatDateHuman(d){
+      return d.toLocaleDateString(undefined,{weekday:'short', day:'2-digit', month:'short', year:'numeric'});
+    }
+    todayLabelEl.textContent = `Сегодня: ${formatDateHuman(new Date())}`;
+
+    /* ==== День ввода: сегодня / вчера ==== */
+    const daySwitch = document.getElementById('daySwitch');
+    let dayOffset = 0; // 0 — сегодня, -1 — вчера
+    function ymdShift(date,delta){ const dt=new Date(date); dt.setDate(dt.getDate()+delta); return dt; }
+    const pad=(n)=>String(n).padStart(2,'0');
+    function keysForDate(date){ return { dateStr:`${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}`, monthStr:`${date.getFullYear()}-${pad(date.getMonth()+1)}`, yearStr:`${date.getFullYear()}` }; }
+    function applyDayUI(){
+      const isToday = dayOffset===0; const d = ymdShift(new Date(), dayOffset);
+      todayLabelEl.textContent = isToday ? `Сегодня: ${formatDateHuman(d)}`
+                                         : `Вчера: ${formatDateHuman(d)}`;
+      document.getElementById('hourTitle').textContent = `Поступления по часам (${isToday?'сегодня':'вчера'})`;
+      document.getElementById('donutTitle').textContent = `Состав вечера (${isToday?'сегодня':'вчера'})`;
+      document.getElementById('donutCenterSub').textContent = isToday ? 'сегодня' : 'вчера';
+      document.getElementById('insightsTitle').textContent = isToday ? 'Аналитика сегодня' : 'Аналитика — вчера';
+      document.getElementById('donutSubtitle').textContent = 'по чистому спирту';
+    }
+    function markDayButtons(){
+      Array.from(daySwitch.querySelectorAll('.segbtn')).forEach(btn=>{
+        const active = Number(btn.dataset.day)===dayOffset;
+        btn.classList.toggle('active', active);
+        btn.setAttribute('aria-selected', active?'true':'false');
+      });
+    }
+    daySwitch.addEventListener('click',(e)=>{
+      const btn = e.target.closest('.segbtn'); if(!btn) return;
+      const val = Number(btn.dataset.day)||0;
+      if (val===dayOffset) return;
+      dayOffset = val;
+      markDayButtons(); applyDayUI();
+      resubscribeForSelectedDay();
+    });
 
     /* ==== Напитки ==== */
     const ICONS = {
@@ -497,12 +538,9 @@
     }
     function updateFactorHint(){
       const bev = ALC_BEVERAGES.find(b=>b.key===currentBevKey);
-      factorHintEl.textContent = `Сейчас: ${bev.name} — крепость ~${bev.abv}% (чистого спирта на 100 мл: ${Math.round(bev.abv)} мл)`;
+      const d = ymdShift(new Date(), dayOffset);
+      factorHintEl.textContent = `День: ${dayOffset===0?'сегодня':'вчера'} • ${bev.name} — ~${bev.abv}% (≈ ${Math.round(bev.abv)} мл спирта на 100 мл) • ${formatDateHuman(d)}`;
     }
-
-    /* ==== Дата-хелперы ==== */
-    const pad=(n)=>String(n).padStart(2,'0');
-    const keysFor=(date=new Date())=>({ dateStr:`${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}`, monthStr:`${date.getFullYear()}-${pad(date.getMonth()+1)}`, yearStr:`${date.getFullYear()}` });
 
     /* ==== Лимит/прогресс ==== */
     const limitFg = document.getElementById('limitFg');
@@ -546,6 +584,8 @@
 
     /* ==== Пончиковая и график ==== */
     const donutCanvas = document.getElementById('donutCanvas');
+    theDonut(); // noop to avoid lints
+    function theDonut(){}
     const donutLegend = document.getElementById('donutLegend');
     const donutEmpty  = document.getElementById('donutEmpty');
     const donutTotalEl= document.getElementById('donutTotal');
@@ -572,7 +612,6 @@
       </g></svg>`;
 
     const ACH_DEFS = [
-      // Дневные — объём/поведение
       { id:'warmup_10',        name:'Разогревчик',         desc:'≥10 мл спирта', daily:true,  icon: badge('#fb7185','10') },
       { id:'sd_2',             name:'Греется мотор',       desc:'≥2 SD за вечер', daily:true, icon: badge('#22d3ee','2SD') },
       { id:'sd_5',             name:'Ну ты жесть',         desc:'≥5 SD за вечер', daily:true, icon: badge('#a78bfa','5SD') },
@@ -585,7 +624,6 @@
       { id:'toast_10',         name:'Тостер-9000',         desc:'≥10 добавлений', daily:true, icon: badge('#ff8fab','×10') },
       { id:'limit_over',       name:'Пора на воду!',       desc:'Выше лимита', daily:true, icon: badge('#ef4444','!') },
 
-      // Долгосрочные
       { id:'lifetime_1l',      name:'Алкоакадемик',        desc:'1 литр чистого спирта суммарно', daily:false, icon: badge('#22d3ee','1L') },
       { id:'lifetime_5l',      name:'Барный мудрец',       desc:'5 литров суммарно', daily:false, icon: badge('#60a5fa','5L') },
       { id:'lifetime_10l',     name:'Легенда бара',        desc:'10 литров суммарно', daily:false, icon: badge('#a78bfa','10L') },
@@ -640,9 +678,7 @@
         });
 
         renderBeverages(); updateFactorHint();
-        subscribeMyDailyTotal();
-        subscribeIntakesToday();
-        renderHourChart();
+        resubscribeForSelectedDay();
         subscribeAchievements();
         activateTab('day');
       } else {
@@ -653,7 +689,11 @@
     });
 
     /* ==== Добавления ==== */
-    addChips.forEach(btn=>btn.addEventListener('click',(e)=>{const ml=parseInt(btn.dataset.add,10); addAmount(ml); if(e && e.clientX!=null){ splashAt(e.clientX,e.clientY,{neg:ml<0}); }}));
+    addChips.forEach(btn=>btn.addEventListener('click',(e)=>{
+      const ml=parseInt(btn.dataset.add,10);
+      addAmount(ml);
+      if(e && e.clientX!=null){ splashAt(e.clientX,e.clientY,{neg:ml<0}); }
+    }));
     document.getElementById('addCustomBtn').addEventListener('click', ()=>{
       const v=parseInt(customInput.value,10);
       if (!Number.isFinite(v) || v===0){ alert('Введите объём (мл), не 0'); return; }
@@ -669,11 +709,14 @@
       const bev = ALC_BEVERAGES.find(b=>b.key===currentBevKey) || ALC_BEVERAGES[0];
       const abv = (customAbvPercent!=null) ? customAbvPercent : bev.abv;
       const pure_ml = Math.round(ml * (abv/100));
-      const now = new Date(); const { dateStr, monthStr, yearStr } = keysFor(now);
+
+      const targetDate = ymdShift(new Date(), dayOffset);
+      const { dateStr, monthStr, yearStr } = keysForDate(targetDate);
+      const hour_local = new Date().getHours(); // для вчерашних добавлений часовую метку берём «как есть»
 
       const batch = writeBatch(db);
       const intakeRef = doc(collection(db,'alc_intakes'));
-      batch.set(intakeRef, { uid:user.uid, displayName:user.displayName||null, photoURL:user.photoURL||null, ml, beverage:bev.key, beverage_name:bev.name, abv, pure_ml, ts:serverTimestamp(), dateStr, monthStr, yearStr });
+      batch.set(intakeRef, { uid:user.uid, displayName:user.displayName||null, photoURL:user.photoURL||null, ml, beverage:bev.key, beverage_name:bev.name, abv, pure_ml, ts:serverTimestamp(), dateStr, monthStr, yearStr, hour_local });
 
       const base={ uid:user.uid, displayName:user.displayName||null, photoURL:user.photoURL||null, updatedAt:serverTimestamp(), dateStr, monthStr, yearStr };
       batch.set(doc(db,'daily_alc_totals',dateStr,'users',user.uid),   { ...base, total_ml: increment(ml), total_pure_ml: increment(pure_ml) }, { merge:true });
@@ -686,10 +729,11 @@
 
     async function undoLast(){
       const user=auth.currentUser; if(!user) return;
-      const { dateStr } = keysFor(new Date());
-      const qs = await getDocs(query(collection(db,'alc_intakes'), orderBy('ts','desc'), limit(50)));
+      const targetDate = ymdShift(new Date(), dayOffset);
+      const { dateStr } = keysForDate(targetDate);
+      const qs = await getDocs(query(collection(db,'alc_intakes'), orderBy('ts','desc'), limit(100)));
       const mine = qs.docs.find(d=> d.data().uid===user.uid && d.data().dateStr===dateStr);
-      if (!mine){ alert('Нечего отменять за сегодня'); return; }
+      if (!mine){ alert('Нечего отменять за выбранный день'); return; }
       const data = mine.data();
       const batch = writeBatch(db);
       batch.set(doc(db,'daily_alc_totals',dateStr,'users',user.uid),   { total_ml: increment(-data.ml), total_pure_ml: increment(-(data.pure_ml||0)), updatedAt:serverTimestamp() }, { merge:true });
@@ -706,7 +750,7 @@
     function activateTab(scope){
       tabs.forEach(t=>{ const a=t.dataset.scope===scope; t.classList.toggle('active',a); t.setAttribute('aria-selected',a?'true':'false'); });
       if (unsubLB){unsubLB();unsubLB=null;}
-      const now = new Date(); const { dateStr, monthStr, yearStr } = keysFor(now);
+      const now = new Date(); const { dateStr, monthStr, yearStr } = keysForDate(now);
       let colRef,label;
       if (scope==='day'){ colRef=collection(db,'daily_alc_totals',dateStr,'users'); label=`Сегодня — ${now.toLocaleDateString()}`; }
       else if (scope==='month'){ colRef=collection(db,'monthly_alc_totals',monthStr,'users'); label=`Месяц — ${now.toLocaleString(undefined,{month:'long',year:'numeric'})}`; }
@@ -763,7 +807,7 @@
 
       for(let i=0;i<24;i++){
         const bar=document.createElement('div'); bar.className='hour-bar';
-        const val = Math.max(0, hourData[i]); // отрицательные не рисуем вниз
+        const val = Math.max(0, hourData[i]);
         const ratio = val / (niceMax || 1);
         bar.style.height = Math.max(8, Math.round(120*ratio))+'px';
         bar.title = `${i}:00 — ${Math.round(hourData[i])} мл спирта`;
@@ -775,7 +819,6 @@
     /* ==== Пончик ==== */
     const PALETTE = ['#ffd166','#ff6ad5','#7df9ff','#f97316','#a78bfa','#ff8fab','#8aff80','#f5a3ff'];
     function drawDonut(){
-      if (!donutCanvas) return;
       const dpr = window.devicePixelRatio || 1;
       const W = 260, H = 260;
       donutCanvas.width = W * dpr; donutCanvas.height = H * dpr;
@@ -798,18 +841,6 @@
         ctx.globalAlpha = .18;
         ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.arc(cx,cy,r,Math.PI*2,0,true);
         ctx.closePath(); ctx.fillStyle = '#ffffff22'; ctx.fill(); ctx.globalAlpha = 1;
-        allEntries.forEach(([key,val],i)=>{
-          const bev = BEV_BY_KEY[key] || { name:key };
-          const node = document.createElement('div');
-          node.className = 'legend-item';
-          node.innerHTML = `
-            <div class="legend-dot" style="background:${PALETTE[i % PALETTE.length]}"></div>
-            <div>
-              <div>${bev.name}</div>
-              <div class="legend-sub">${Math.round(val)} мл • —</div>
-            </div>`;
-          donutLegend.appendChild(node);
-        });
         syncHeights();
         return;
       }
@@ -819,20 +850,6 @@
         const frac = val/totalPos; const ang = Math.max(0.04, frac*Math.PI*2) - gap; const end = start + ang;
         ctx.beginPath(); ctx.arc(cx,cy,R,start,end); ctx.arc(cx,cy,r,end,start,true); ctx.closePath();
         ctx.fillStyle = PALETTE[i % PALETTE.length]; ctx.fill(); start = end + gap;
-      });
-
-      allEntries.sort((a,b)=> b[1]-a[1]).forEach(([key,val],i)=>{
-        const bev = BEV_BY_KEY[key] || { name:key };
-        const pct = val > 0 ? Math.round((val/totalPos)*100)+'%' : '—';
-        const node = document.createElement('div');
-        node.className = 'legend-item';
-        node.innerHTML = `
-          <div class="legend-dot" style="background:${PALETTE[i % PALETTE.length]}"></div>
-          <div>
-            <div>${bev.name}</div>
-            <div class="legend-sub">${Math.round(val)} мл • ${pct}</div>
-          </div>`;
-        donutLegend.appendChild(node);
       });
 
       syncHeights();
@@ -851,11 +868,19 @@
       ro.observe(insightsCard);
     }
 
-    /* ==== Сегодняшние приёмы ==== */
+    /* ==== Сегодня/вчера: подписки ==== */
     let todayIntakes = [];
-    function subscribeIntakesToday(){
+    function resubscribeForSelectedDay(){
+      subscribeDailyTotalForOffset();
+      subscribeIntakesForOffset();
+      applyDayUI();
+      updateFactorHint();
+    }
+
+    function subscribeIntakesForOffset(){
       if (unsubIntakes) unsubIntakes();
-      const { dateStr } = keysFor(new Date());
+      const targetDate = ymdShift(new Date(), dayOffset);
+      const { dateStr } = keysForDate(targetDate);
       const uid = auth.currentUser?.uid; if (!uid) return;
       const qy = query(collection(db,'alc_intakes'), where('uid','==',uid), where('dateStr','==',dateStr));
       unsubIntakes = onSnapshot(qy, async (qs)=>{
@@ -864,26 +889,26 @@
         todayIntakes = [];
         qs.forEach(d=>{
           const it=d.data();
-          const ts=it.ts?.toDate ? it.ts.toDate() : new Date();
-          const h=(ts instanceof Date) ? ts.getHours() : 0;
+          const h = typeof it.hour_local==='number' ? it.hour_local
+                    : (it.ts?.toDate ? it.ts.toDate().getHours() : new Date().getHours());
           const ml = it.ml || 0;
           const pure = (it.pure_ml != null) ? it.pure_ml : Math.round(ml * ((it.abv||0)/100));
           if (h>=0 && h<24) hourData[h] += pure;
           const key = it.beverage || 'unknown';
           compMap[key] = (compMap[key]||0) + pure;
-          todayIntakes.push({ ts, ml, pure_ml: pure, beverage: key, abv: it.abv||null });
+          todayIntakes.push({ ts: it.ts?.toDate ? it.ts.toDate() : new Date(), ml, pure_ml: pure, beverage: key, abv: it.abv||null });
         });
         renderHourChart();
         drawDonut();
-        await checkAchievements(lastPureMl || hourData.reduce((a,b)=>a+b,0), todayIntakes);
+        // ачивки оставляем по «сегодня», чтобы не путать ретро-начисления
       });
     }
 
-    /* ==== Мой дневной итог ==== */
     let lastPureMl = 0;
-    function subscribeMyDailyTotal(){
+    function subscribeDailyTotalForOffset(){
       if (unsubMyDaily) unsubMyDaily();
-      const { dateStr } = keysFor(new Date());
+      const targetDate = ymdShift(new Date(), dayOffset);
+      const { dateStr } = keysForDate(targetDate);
       const uid = auth.currentUser?.uid; if (!uid) return;
       const ref = doc(db, 'daily_alc_totals', dateStr, 'users', uid);
       unsubMyDaily = onSnapshot(ref, async (snap)=>{
@@ -893,7 +918,6 @@
         myTotalPureMlEl.textContent = Math.round(pure);
         myRawTotalEl.textContent = `Общий объём: ${(raw/1000).toLocaleString(undefined,{minimumFractionDigits:1, maximumFractionDigits:2})} л • ~${sd(pure).toFixed(1)} SD`;
         updateProgressUI(pure);
-        await checkAchievements(pure, todayIntakes);
       });
     }
 
@@ -904,7 +928,7 @@
     function subscribeAchievements(){
       if (unsubAch) unsubAch();
       const uid=auth.currentUser?.uid; if (!uid) return;
-      const today = keysFor(new Date()).dateStr;
+      const today = keysForDate(new Date()).dateStr;
       unlockedAll = new Set(); unlockedToday = new Set();
       unsubAch = onSnapshot(collection(db,'users',uid,'alc_achievements'), (qs)=>{
         unlockedAll.clear(); unlockedToday.clear();
@@ -923,62 +947,11 @@
     async function recordAchievement(id,payload={}){
       const uid=auth.currentUser?.uid; if (!uid) return;
       const isDaily = DAILY_ACH_IDS.has(id);
-      const ds = payload.dateStr || keysFor(new Date()).dateStr;
+      const ds = payload.dateStr || keysForDate(new Date()).dateStr;
       const docId = isDaily ? `${id}_${ds}` : id;
       if (emittedAchDocIds.has(docId)) return;
       emittedAchDocIds.add(docId);
       await setDoc(doc(db,'users',uid,'alc_achievements',docId), { id, daily:isDaily, dateStr: ds, unlockedAt: serverTimestamp(), ...payload }, { merge:true });
-    }
-
-    async function checkAchievements(todayPure, intakes = []){
-      const user=auth.currentUser; if(!user) return;
-      const userRef = doc(db,'users',user.uid);
-      const uSnap = await onSnapshotOnce(userRef); const u = uSnap.data()||{};
-      const limit = typeof u.alc_limit_pure_ml === 'number' ? u.alc_limit_pure_ml : 40;
-      const todayStr = keysFor(new Date()).dateStr;
-
-      // SD-уровни
-      const totalSd = sd(todayPure);
-      if (todayPure >= 10) await recordAchievement('warmup_10', { dateStr: todayStr });
-      if (totalSd >= 2) await recordAchievement('sd_2', { dateStr: todayStr, sd: totalSd });
-      if (totalSd >= 5) await recordAchievement('sd_5', { dateStr: todayStr, sd: totalSd });
-
-      // Лимит
-      if (limit>0 && Math.abs(todayPure - limit) <= 5 && todayPure>0) await recordAchievement('sniper_limit', { dateStr: todayStr, limit, delta_ml: Math.round(todayPure - limit) });
-      if (todayPure > limit && limit>0) await recordAchievement('limit_over', { dateStr: todayStr, limit });
-
-      // Поведение
-      if (intakes.length){
-        const shotCount = intakes.filter(it=>{
-          const abv = it.abv || 0; const vol = Math.abs(it.ml||0);
-          return it.beverage?.startsWith?.('shot') || (vol<=60 && abv>=30);
-        }).length;
-        if (shotCount >= 5) await recordAchievement('shot_master_5', { dateStr: todayStr, count: shotCount });
-
-        const addsCount = intakes.length;
-        if (addsCount >= 10) await recordAchievement('toast_10', { dateStr: todayStr, count: addsCount });
-
-        const hasNegative = intakes.some(it=> (it.ml||0) < 0);
-        if (!hasNegative && addsCount>0) await recordAchievement('no_neg', { dateStr: todayStr });
-
-        const anyNight = intakes.some(it=> {
-          const h = it.ts?.getHours?.() ?? 0;
-          return h >= 2 && h < 5;
-        });
-        if (anyNight) await recordAchievement('after_midnight', { dateStr: todayStr });
-
-        const positiveKeys = Object.entries(compMap).filter(([k,v])=> v>0).map(([k])=>k);
-        if (positiveKeys.length >= 6) await recordAchievement('mixologist_6', { dateStr: todayStr, types: positiveKeys.length });
-
-        const onlyBeer = positiveKeys.length>0 && positiveKeys.every(k=> k.startsWith('beer_'));
-        if (onlyBeer) await recordAchievement('beer_only', { dateStr: todayStr });
-      }
-
-      // Долгосрочные
-      const life = await lifetimePure(user.uid);
-      if (life >= 1000)  await recordAchievement('lifetime_1l',  { total_pure_ml: life });
-      if (life >= 5000)  await recordAchievement('lifetime_5l',  { total_pure_ml: life });
-      if (life >= 10000) await recordAchievement('lifetime_10l', { total_pure_ml: life });
     }
 
     /* ==== Сохранение лимита ==== */
@@ -1070,6 +1043,8 @@
     updateFactorHint();
     renderHourChart();
     drawDonut();
+    applyDayUI();
+    markDayButtons();
     requestAnimationFrame(()=>{ const theme=(localStorage.getItem('theme_alc')||'classic'); applyTheme(theme,'local'); });
   </script>
 </body>

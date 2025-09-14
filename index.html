@@ -584,8 +584,6 @@
 
     /* ==== Пончиковая и график ==== */
     const donutCanvas = document.getElementById('donutCanvas');
-    theDonut(); // noop to avoid lints
-    function theDonut(){}
     const donutLegend = document.getElementById('donutLegend');
     const donutEmpty  = document.getElementById('donutEmpty');
     const donutTotalEl= document.getElementById('donutTotal');
@@ -712,7 +710,7 @@
 
       const targetDate = ymdShift(new Date(), dayOffset);
       const { dateStr, monthStr, yearStr } = keysForDate(targetDate);
-      const hour_local = new Date().getHours(); // для вчерашних добавлений часовую метку берём «как есть»
+      const hour_local = new Date().getHours(); // для вчерашних добавлений: час «как сейчас», чтобы график был честный по твоему времени
 
       const batch = writeBatch(db);
       const intakeRef = doc(collection(db,'alc_intakes'));
@@ -816,72 +814,70 @@
       syncHeights();
     }
 
-    /* ==== Пончик ==== */
+    /* ==== Пончик + легенда ==== */
     const PALETTE = ['#ffd166','#ff6ad5','#7df9ff','#f97316','#a78bfa','#ff8fab','#8aff80','#f5a3ff'];
-function drawDonut(){
-  const dpr = window.devicePixelRatio || 1;
-  const W = 260, H = 260;
-  donutCanvas.width = W * dpr; donutCanvas.height = H * dpr;
-  donutCanvas.style.width = W + 'px'; donutCanvas.style.height= H + 'px';
-  const ctx = donutCanvas.getContext('2d');
-  ctx.setTransform(dpr,0,0,dpr,0,0);
-  ctx.clearRect(0,0,W,H);
+    function drawDonut(){
+      const dpr = window.devicePixelRatio || 1;
+      const W = 260, H = 260;
+      donutCanvas.width = W * dpr; donutCanvas.height = H * dpr;
+      donutCanvas.style.width = W + 'px'; donutCanvas.style.height= H + 'px';
+      const ctx = donutCanvas.getContext('2d');
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+      ctx.clearRect(0,0,W,H);
 
-  // Суммарно по всем (и положит, и отрицат.) — в центр
-  const allEntries = Object.entries(compMap);
-  const totalAll   = allEntries.reduce((s,[,v])=> s + v, 0);
-  donutTotalEl.textContent = `${Math.round(totalAll)} мл`;
+      // В центр — итог включая отрицательные коррекции
+      const allEntries = Object.entries(compMap);
+      const totalAll   = allEntries.reduce((s,[,v])=> s + v, 0);
+      donutTotalEl.textContent = `${Math.round(totalAll)} мл`;
 
-  // Для диаграммы и легенды берём только положительные вклады
-  const posEntries = allEntries.filter(([,v])=> v>0).sort((a,b)=> b[1]-a[1]);
-  const totalPos   = posEntries.reduce((s,[,v])=> s + v, 0);
+      // Для диаграммы и легенды — только положительные вклады
+      const posEntries = allEntries.filter(([,v])=> v>0).sort((a,b)=> b[1]-a[1]);
+      const totalPos   = posEntries.reduce((s,[,v])=> s + v, 0);
 
-  // Показать/скрыть заглушку и очистить легенду
-  donutEmpty.style.display = totalPos > 0 ? 'none' : 'block';
-  donutLegend.innerHTML = '';
+      donutEmpty.style.display = totalPos > 0 ? 'none' : 'block';
+      donutLegend.innerHTML = '';
 
-  const cx = W/2, cy = H/2, R = 100, r = 66;
+      const cx = W/2, cy = H/2, R = 100, r = 66;
 
-  // Пусто — рисуем серую «пустую» пончик-рамку
-  if (totalPos <= 0){
-    ctx.globalAlpha = .18;
-    ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.arc(cx,cy,r,Math.PI*2,0,true);
-    ctx.closePath(); ctx.fillStyle = '#ffffff22'; ctx.fill(); ctx.globalAlpha = 1;
-    syncHeights();
-    return;
-  }
+      if (totalPos <= 0){
+        ctx.globalAlpha = .18;
+        ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.arc(cx,cy,r,Math.PI*2,0,true);
+        ctx.closePath(); ctx.fillStyle = '#ffffff22'; ctx.fill(); ctx.globalAlpha = 1;
+        syncHeights(); return;
+      }
 
-  // Сегменты
-  let start = -Math.PI/2; const gap = 0.02;
-  posEntries.forEach(([key,val],i)=>{
-    const frac = val/totalPos; 
-    const ang  = Math.max(0.04, frac*Math.PI*2) - gap; 
-    const end  = start + ang;
-    ctx.beginPath(); ctx.arc(cx,cy,R,start,end); ctx.arc(cx,cy,r,end,start,true); ctx.closePath();
-    ctx.fillStyle = PALETTE[i % PALETTE.length]; 
-    ctx.fill(); 
-    start = end + gap;
-  });
+      let start = -Math.PI/2; const gap = 0.02;
+      posEntries.forEach(([key,val],i)=>{
+        const frac = val/totalPos; 
+        const ang  = Math.max(0.04, frac*Math.PI*2) - gap; 
+        const end  = start + ang;
+        ctx.beginPath(); ctx.arc(cx,cy,R,start,end); ctx.arc(cx,cy,r,end,start,true); ctx.closePath();
+        ctx.fillStyle = PALETTE[i % PALETTE.length]; 
+        ctx.fill(); 
+        start = end + gap;
+      });
 
-  // Легенда: цветная точка + название напитка + мл и %
-  posEntries.forEach(([key,val],i)=>{
-    const bev = BEV_BY_KEY[key] || { name: key };
-    const pct = Math.round((val/Math.max(1,totalPos))*100);
-    const item = document.createElement('div');
-    item.className = 'legend-item';
-    item.innerHTML = `
-      <div class="legend-dot" style="background:${PALETTE[i % PALETTE.length]}"></div>
-      <div>
-        <div>${bev.name}</div>
-        <div class="legend-sub">${Math.round(val)} мл • ${pct}%</div>
-      </div>`;
-    donutLegend.appendChild(item);
-  });
+      // Легенда с названиями напитков
+      posEntries.forEach(([key,val],i)=>{
+        const bev = BEV_BY_KEY[key] || { name: key };
+        const pct = Math.round((val/Math.max(1,totalPos))*100);
+        const item = document.createElement('div');
+        item.className = 'legend-item';
+        item.innerHTML = `
+          <div class="legend-dot" style="background:${PALETTE[i % PALETTE.length]}"></div>
+          <div>
+            <div>${bev.name}</div>
+            <div class="legend-sub">${Math.round(val)} мл • ${pct}%</div>
+          </div>`;
+        donutLegend.appendChild(item);
+      });
 
-  syncHeights();
-}
+      syncHeights();
+    }
 
     /* ==== Синхронизация высот карточек ==== */
+    const donutCard = document.getElementById('donutCard');
+    const insightsCard= document.getElementById('insightsCard');
     function syncHeights(){
       const desktop = window.matchMedia('(min-width: 961px)').matches;
       if (!desktop){ insightsCard.style.height=''; return; }
@@ -922,11 +918,15 @@ function drawDonut(){
           if (h>=0 && h<24) hourData[h] += pure;
           const key = it.beverage || 'unknown';
           compMap[key] = (compMap[key]||0) + pure;
-          todayIntakes.push({ ts: it.ts?.toDate ? it.ts.toDate() : new Date(), ml, pure_ml: pure, beverage: key, abv: it.abv||null });
+          todayIntakes.push({ ts: it.ts?.toDate ? it.ts.toDate() : new Date(), ml, pure_ml: pure, beverage: key, abv: it.abv||null, hour_local: h });
         });
         renderHourChart();
         drawDonut();
-        // ачивки оставляем по «сегодня», чтобы не путать ретро-начисления
+
+        // Начисляем ДНЕВНЫЕ ачивки только за «сегодня», чтобы не путать ретро
+        if (dayOffset === 0) {
+          await checkDailyAchievementsForToday();
+        }
       });
     }
 
@@ -947,10 +947,13 @@ function drawDonut(){
       });
     }
 
-    /* ==== Ачивки ==== */
+    /* ==== Ачивки: запись/чтение ==== */
     function onSnapshotOnce(ref){ return new Promise((resolve)=>{ const unsub=onSnapshot(ref,(snap)=>{ resolve(snap); unsub(); },{includeMetadataChanges:false}); }); }
-    function lifetimePure(uid){ return getDocs(query(collectionGroup(db,'users'), where('uid','==',uid))).then(s=>{ let sum=0; s.forEach(d=>{ const x=d.data(); if (x.yearStr && typeof x.total_pure_ml==='number') sum+=Math.max(0, x.total_pure_ml); }); return sum; }); }
-
+    async function lifetimePure(uid){
+      const s = await getDocs(query(collectionGroup(db,'users'), where('uid','==',uid)));
+      let sum=0; s.forEach(d=>{ const x=d.data(); if (x.yearStr && typeof x.total_pure_ml==='number') sum+=Math.max(0, x.total_pure_ml); });
+      return sum;
+    }
     function subscribeAchievements(){
       if (unsubAch) unsubAch();
       const uid=auth.currentUser?.uid; if (!uid) return;
@@ -968,7 +971,6 @@ function drawDonut(){
         renderAchievements();
       });
     }
-
     const emittedAchDocIds = new Set();
     async function recordAchievement(id,payload={}){
       const uid=auth.currentUser?.uid; if (!uid) return;
@@ -978,6 +980,54 @@ function drawDonut(){
       if (emittedAchDocIds.has(docId)) return;
       emittedAchDocIds.add(docId);
       await setDoc(doc(db,'users',uid,'alc_achievements',docId), { id, daily:isDaily, dateStr: ds, unlockedAt: serverTimestamp(), ...payload }, { merge:true });
+    }
+
+    /* ==== Ежедневные ачивки «за сегодня» ==== */
+    async function checkDailyAchievementsForToday(){
+      const d = new Date(); const p=n=>String(n).padStart(2,'0');
+      const dateStr = `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+
+      const pureTodayPos = Object.values(compMap).reduce((s,v)=> s + Math.max(0,v), 0);
+      const typesPos = Object.entries(compMap).filter(([,v])=> v>0).map(([k])=>k);
+      const typesCount = typesPos.length;
+
+      if (typesCount >= 6) await recordAchievement('mixologist_6', { dateStr, types: typesCount });
+
+      if (pureTodayPos >= 10) await recordAchievement('warmup_10', { dateStr });
+      const sds = (pureTodayPos*0.789)/10;
+      if (sds >= 2) await recordAchievement('sd_2', { dateStr, sds:+sds.toFixed(1) });
+      if (sds >= 5) await recordAchievement('sd_5', { dateStr, sds:+sds.toFixed(1) });
+
+      if (Math.abs(pureTodayPos - (currentLimitPureMl||0)) <= 5 && (currentLimitPureMl||0) > 0)
+        await recordAchievement('sniper_limit', { dateStr, limit_ml: currentLimitPureMl, delta_ml: Math.round(pureTodayPos-currentLimitPureMl) });
+
+      if ((currentLimitPureMl||0) > 0 && pureTodayPos > currentLimitPureMl)
+        await recordAchievement('limit_over', { dateStr, limit_ml: currentLimitPureMl });
+
+      const shotCount = todayIntakes.filter(it => (it.beverage||'').startsWith('shot_') && (it.ml||0) > 0).length;
+      if (shotCount >= 5) await recordAchievement('shot_master_5', { dateStr, count: shotCount });
+
+      const hasNeg = todayIntakes.some(it => (it.ml||0) < 0);
+      if (!hasNeg && todayIntakes.length>0) await recordAchievement('no_neg', { dateStr, count: todayIntakes.length });
+
+      const anyAfter2 = todayIntakes.some(it=>{
+        const h = typeof it.hour_local==='number' ? it.hour_local :
+                  (it.ts instanceof Date ? it.ts.getHours() : 0);
+        return h >= 2;
+      });
+      if (anyAfter2) await recordAchievement('after_midnight', { dateStr });
+
+      const beerOnly = typesPos.length>0 && typesPos.every(k => k==='beer_light' || k==='beer_strong');
+      if (beerOnly) await recordAchievement('beer_only', { dateStr });
+
+      // Долгосрочные (сумма за всё время)
+      const user = auth.currentUser;
+      if (user){
+        const life = await lifetimePure(user.uid);
+        if (life >= 1000)  await recordAchievement('lifetime_1l',  { total_pure_ml: life });
+        if (life >= 5000)  await recordAchievement('lifetime_5l',  { total_pure_ml: life });
+        if (life >= 10000) await recordAchievement('lifetime_10l', { total_pure_ml: life });
+      }
     }
 
     /* ==== Сохранение лимита ==== */

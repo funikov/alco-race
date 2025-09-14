@@ -818,42 +818,68 @@
 
     /* ==== Пончик ==== */
     const PALETTE = ['#ffd166','#ff6ad5','#7df9ff','#f97316','#a78bfa','#ff8fab','#8aff80','#f5a3ff'];
-    function drawDonut(){
-      const dpr = window.devicePixelRatio || 1;
-      const W = 260, H = 260;
-      donutCanvas.width = W * dpr; donutCanvas.height = H * dpr;
-      donutCanvas.style.width = W + 'px'; donutCanvas.style.height= H + 'px';
-      const ctx = donutCanvas.getContext('2d');
-      ctx.setTransform(dpr,0,0,dpr,0,0);
-      ctx.clearRect(0,0,W,H);
+function drawDonut(){
+  const dpr = window.devicePixelRatio || 1;
+  const W = 260, H = 260;
+  donutCanvas.width = W * dpr; donutCanvas.height = H * dpr;
+  donutCanvas.style.width = W + 'px'; donutCanvas.style.height= H + 'px';
+  const ctx = donutCanvas.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,W,H);
 
-      const allEntries = Object.entries(compMap);
-      const totalAll   = allEntries.reduce((s,[,v])=> s + v, 0);
-      donutTotalEl.textContent = `${Math.round(totalAll)} мл`;
+  // Суммарно по всем (и положит, и отрицат.) — в центр
+  const allEntries = Object.entries(compMap);
+  const totalAll   = allEntries.reduce((s,[,v])=> s + v, 0);
+  donutTotalEl.textContent = `${Math.round(totalAll)} мл`;
 
-      const posEntries = allEntries.filter(([,v])=> v>0).sort((a,b)=> b[1]-a[1]);
-      const totalPos   = posEntries.reduce((s,[,v])=> s + v, 0);
+  // Для диаграммы и легенды берём только положительные вклады
+  const posEntries = allEntries.filter(([,v])=> v>0).sort((a,b)=> b[1]-a[1]);
+  const totalPos   = posEntries.reduce((s,[,v])=> s + v, 0);
 
-      donutLegend.innerHTML = '';
-      const cx = W/2, cy = H/2, R = 100, r = 66;
+  // Показать/скрыть заглушку и очистить легенду
+  donutEmpty.style.display = totalPos > 0 ? 'none' : 'block';
+  donutLegend.innerHTML = '';
 
-      if (totalPos <= 0){
-        ctx.globalAlpha = .18;
-        ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.arc(cx,cy,r,Math.PI*2,0,true);
-        ctx.closePath(); ctx.fillStyle = '#ffffff22'; ctx.fill(); ctx.globalAlpha = 1;
-        syncHeights();
-        return;
-      }
+  const cx = W/2, cy = H/2, R = 100, r = 66;
 
-      let start = -Math.PI/2; const gap = 0.02;
-      posEntries.forEach(([key,val],i)=>{
-        const frac = val/totalPos; const ang = Math.max(0.04, frac*Math.PI*2) - gap; const end = start + ang;
-        ctx.beginPath(); ctx.arc(cx,cy,R,start,end); ctx.arc(cx,cy,r,end,start,true); ctx.closePath();
-        ctx.fillStyle = PALETTE[i % PALETTE.length]; ctx.fill(); start = end + gap;
-      });
+  // Пусто — рисуем серую «пустую» пончик-рамку
+  if (totalPos <= 0){
+    ctx.globalAlpha = .18;
+    ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.arc(cx,cy,r,Math.PI*2,0,true);
+    ctx.closePath(); ctx.fillStyle = '#ffffff22'; ctx.fill(); ctx.globalAlpha = 1;
+    syncHeights();
+    return;
+  }
 
-      syncHeights();
-    }
+  // Сегменты
+  let start = -Math.PI/2; const gap = 0.02;
+  posEntries.forEach(([key,val],i)=>{
+    const frac = val/totalPos; 
+    const ang  = Math.max(0.04, frac*Math.PI*2) - gap; 
+    const end  = start + ang;
+    ctx.beginPath(); ctx.arc(cx,cy,R,start,end); ctx.arc(cx,cy,r,end,start,true); ctx.closePath();
+    ctx.fillStyle = PALETTE[i % PALETTE.length]; 
+    ctx.fill(); 
+    start = end + gap;
+  });
+
+  // Легенда: цветная точка + название напитка + мл и %
+  posEntries.forEach(([key,val],i)=>{
+    const bev = BEV_BY_KEY[key] || { name: key };
+    const pct = Math.round((val/Math.max(1,totalPos))*100);
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+    item.innerHTML = `
+      <div class="legend-dot" style="background:${PALETTE[i % PALETTE.length]}"></div>
+      <div>
+        <div>${bev.name}</div>
+        <div class="legend-sub">${Math.round(val)} мл • ${pct}%</div>
+      </div>`;
+    donutLegend.appendChild(item);
+  });
+
+  syncHeights();
+}
 
     /* ==== Синхронизация высот карточек ==== */
     function syncHeights(){

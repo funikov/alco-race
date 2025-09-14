@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Битва бокалов — Classic & Groovy</title>
+  <title>Эвакуация — Classic & Groovy</title>
 
   <!-- Шрифты -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -15,7 +15,7 @@
       --bg1:#0b0f1d; --bg2:#0f172a;
       --border:rgba(148,163,184,.16);
       --muted:#94a3b8; --text:#e5e7eb;
-      --brand:#f97316; --brand2:#fb7185; /* тёплые градиенты :) */
+      --brand:#f97316; --brand2:#fb7185; /* тёплый градиент */
       --barStart: var(--brand); --barEnd: var(--brand2);
       --shadow:0 20px 40px rgba(0,0,0,.35); --radius:18px;
     }
@@ -108,7 +108,7 @@
     @keyframes ripple{to{transform:translate(-50%,-50%) scale(4.2);opacity:0}}
 
     .hour-wrap{display:flex;gap:8px;align-items:flex-end}
-    .y-axis{position:relative;height:140px;width:46px;margin-top:8px}
+    .y-axis{position:relative;height:140px;width:56px;margin-top:8px}
     .y-axis .ylabel{position:absolute;left:0;top:0;bottom:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);writing-mode:vertical-rl;transform:rotate(180deg)}
     .yticks{position:absolute;right:0;top:0;bottom:0;display:flex;flex-direction:column;justify-content:space-between;align-items:flex-end;font-size:11px;color:var(--muted)}
     .yticks .tick{line-height:1}
@@ -143,6 +143,7 @@
     .tfoot td{font-weight:800}
 
     .banner{margin-top:8px;font-size:12px;color:#eab308}
+    .sd-note{margin-top:6px;font-size:12px;color:var(--muted);line-height:1.35}
   </style>
 </head>
 <body data-theme="classic">
@@ -150,8 +151,8 @@
     <div class="brand">
       <div class="drop" aria-hidden="true"></div>
       <div>
-        <div class="title">Битва бокалов</div>
-        <div class="subtitle"><span id="themeLabel">Classic</span> — считаем чистый спирт 🤪</div>
+        <div class="title">Эвакуация</div>
+        <div class="subtitle"><span id="themeLabel">Classic</span> — считаем чистый спирт, шутим ответственно 🍻</div>
       </div>
     </div>
 
@@ -172,7 +173,7 @@
 
   <main id="app" class="hidden">
     <div class="grid two-col">
-      <!-- Мой «вечер» -->
+      <!-- Мой вечер -->
       <section class="card" id="myDayCard" aria-labelledby="myDayTitle">
         <div class="row" style="justify-content: space-between; align-items: baseline; gap: 8px;">
           <h2 id="myDayTitle">Мой вечер</h2>
@@ -217,11 +218,18 @@
               <span class="muted">мл спирта</span>
               <button class="btn secondary" id="saveLimitBtn" title="Сохранить лимит">Сохранить</button>
             </div>
+            <div class="sd-note">
+              <strong>Что такое SD?</strong> SD = «стандартная доза» алкоголя. 1 SD — это <em>10 граммов</em> чистого спирта.
+              Мы считаем так: граммы = мл спирта × 0.789 (плотность этанола), а затем SD ≈ граммы / 10.
+              То есть 1 SD ≈ 12.7 мл чистого спирта.
+            </div>
             <div class="hint banner">Шутим — но помним о безопасности: вода, перекусы и такси 🚕</div>
           </div>
         </div>
 
         <div class="chipbar" aria-label="Быстро добавить">
+          <button class="chip" data-add="30">+ шот (30 мл)</button>
+          <button class="chip" data-add="40">+ шот (40 мл)</button>
           <button class="chip" data-add="50">+ шот (50 мл)</button>
           <button class="chip" data-add="150">+ бокал (150 мл)</button>
           <button class="chip" data-add="330">+ бутылка (330 мл)</button>
@@ -253,7 +261,7 @@
         </div>
         <div class="muted" id="periodLabel" style="margin:8px 0 12px;"></div>
         <div class="lb-list" id="lbList" aria-live="polite"></div>
-        <div class="muted" style="margin-top:6px">Рейтинг по чистому спирту (мл). SD ≈ граммы / 10.</div>
+        <div class="muted" style="margin-top:6px">Рейтинг по чистому спирту (мл). <strong>SD</strong> — стандартные дозы (см. пояснение выше).</div>
       </section>
 
       <!-- Аналитика -->
@@ -446,11 +454,13 @@
       gin:`<svg viewBox="0 0 24 24" class="icon" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="3" width="8" height="18" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M8 7h8" stroke="currentColor" stroke-width="1.5"/></svg>`,
       tequila:`<svg viewBox="0 0 24 24" class="icon" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="6" width="8" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M9 6h6" stroke="currentColor" stroke-width="1.5"/></svg>`,
       liqueur:`<svg viewBox="0 0 24 24" class="icon" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="7" y="4" width="10" height="16" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M9 8h6" stroke="currentColor" stroke-width="1.5"/></svg>`,
-      aperol:`<svg viewBox="0 0 24 24" class="icon" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 3h10v4a5 5 0 0 1-5 5 5 5 0 0 1-5-5V3Z" stroke="currentColor" stroke-width="1.5"/><path d="M12 12v6" stroke="currentColor" stroke-width="1.5"/></svg>`,
-      mojito:`<svg viewBox="0 0 24 24" class="icon" fill="none"><rect x="7" y="3" width="10" height="18" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M9 7h6M9 12h6" stroke="currentColor" stroke-width="1.5"/></svg>`,
-      negroni:`<svg viewBox="0 0 24 24" class="icon" fill="none"><rect x="6" y="5" width="12" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M6 10h12" stroke="currentColor" stroke-width="1.5"/></svg>`,
+      shot_40:`<svg viewBox="0 0 24 24" class="icon" fill="none"><path d="M7 4h10l-1 5-2 10a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2L8 9 7 4Z" stroke="currentColor" stroke-width="1.5"/></svg>`,
+      shot_tequila:`<svg viewBox="0 0 24 24" class="icon" fill="none"><path d="M7 4h10l-1 5-2 10a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2L8 9 7 4Z" stroke="currentColor" stroke-width="1.5"/><path d="M9 7h6" stroke="currentColor" stroke-width="1.5"/></svg>`,
+      shot_absinthe:`<svg viewBox="0 0 24 24" class="icon" fill="none"><path d="M7 4h10l-1 5-2 10a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2L8 9 7 4Z" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="10" r="1" fill="currentColor"/></svg>`,
+      shot_sambuca:`<svg viewBox="0 0 24 24" class="icon" fill="none"><path d="M7 4h10l-1 5-2 10a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2L8 9 7 4Z" stroke="currentColor" stroke-width="1.5"/><path d="M12 6v3" stroke="currentColor" stroke-width="1.5"/></svg>`
     };
 
+    // Без коктейлей, но добавлены шоты
     const ALC_BEVERAGES = [
       { key:'beer_light', name:'Лагер',         abv: 4.5 },
       { key:'beer_strong',name:'IPA',           abv: 6.5 },
@@ -464,9 +474,10 @@
       { key:'gin',        name:'Джин',          abv: 40.0 },
       { key:'tequila',    name:'Текила',        abv: 38.0 },
       { key:'liqueur',    name:'Ликёр',         abv: 20.0 },
-      { key:'aperol',     name:'Апероль-спритц',abv: 11.0 },
-      { key:'mojito',     name:'Мохито',        abv: 12.0 },
-      { key:'negroni',    name:'Негрони',       abv: 24.0 },
+      { key:'shot_40',    name:'Шот (40%)',     abv: 40.0 },
+      { key:'shot_tequila',name:'Шот текилы',    abv: 38.0 },
+      { key:'shot_absinthe',name:'Шот абсента',  abv: 70.0 },
+      { key:'shot_sambuca',name:'Шот самбуки',   abv: 38.0 },
     ];
     const BEV_BY_KEY = Object.fromEntries(ALC_BEVERAGES.map(b=>[b.key,b]));
 
@@ -554,9 +565,6 @@
     function splashAt(x,y,opts={}){ const count = opts.count || 14; for(let i=0;i<count;i++){ const p=document.createElement('div'); p.className='splash-particle'; const angle=Math.random()*Math.PI*2; const dist=40+Math.random()*70; const dx=Math.cos(angle)*dist; const dy=Math.sin(angle)*dist-10; const size=6+Math.random()*8; p.style.setProperty('--dx',dx+'px'); p.style.setProperty('--dy',dy+'px'); p.style.width=size+'px'; p.style.height=size+'px'; p.style.left=(x-size/2)+'px'; p.style.top=(y-size/2)+'px'; if (opts.neg){ p.style.background='radial-gradient(circle at 30% 30%, #fca5a5, #f87171 60%)'; p.style.filter='drop-shadow(0 6px 16px rgba(248,113,113,.25))'; } splashLayer.appendChild(p); p.addEventListener('animationend',()=>p.remove()); } const r=document.createElement('div'); r.className='splash-ripple'; r.style.left=x+'px'; r.style.top=y+'px'; if (opts.neg){ r.style.borderColor='rgba(248,113,113,.7)'; } splashLayer.appendChild(r); r.addEventListener('animationend',()=>r.remove()); }
     function splashNearTotal(neg){ const el=document.getElementById('myTotalPureMl'); const rect=el.getBoundingClientRect(); splashAt(rect.left+rect.width/2, rect.top+rect.height/2, {neg:!!neg, count:10}); }
 
-    /* ==== Тема при старте ==== */
-    const signRow = document.getElementById('authRow');
-
     /* ==== Ачивки (шуточные) ==== */
     const badge = (color, text)=>`
       <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><g>
@@ -565,7 +573,7 @@
         <text x="32" y="37" text-anchor="middle" font-size="16" fill="#ffffff" font-family="Inter, Arial" font-weight="700">${text}</text>
       </g></svg>`;
     const ACH_DEFS = [
-      { id:'warmup_10',   name:'Разогревчик',        desc:'≥10 мл спирта' , daily:true,  icon: badge('#fb7185','10') },
+      { id:'warmup_10',   name:'Разогревчик',        desc:'≥10 мл спирта', daily:true,  icon: badge('#fb7185','10') },
       { id:'sommelier_4', name:'Сомелье',            desc:'≥4 типа напитков', daily:true, icon: badge('#ffd166','4+') },
       { id:'toaster_5',   name:'Тостер',             desc:'5 тостов (добавлений)', daily:true, icon: badge('#f97316','×5') },
       { id:'limit_over',  name:'Пора на воду!',      desc:'Выше лимита', daily:true, icon: badge('#ef4444','!') },
@@ -638,7 +646,7 @@
 
     /* ==== Добавления ==== */
     addChips.forEach(btn=>btn.addEventListener('click',(e)=>{const ml=parseInt(btn.dataset.add,10); addAmount(ml); if(e && e.clientX!=null){ splashAt(e.clientX,e.clientY,{neg:ml<0}); }}));
-    addCustomBtn.addEventListener('click', ()=>{
+    document.getElementById('addCustomBtn').addEventListener('click', ()=>{
       const v=parseInt(customInput.value,10);
       if (!Number.isFinite(v) || v===0){ alert('Введите объём (мл), не 0'); return; }
       const abvVal = parseFloat(customAbv.value);
@@ -646,7 +654,7 @@
       const r = addCustomBtn.getBoundingClientRect(); splashAt(r.left+r.width/2, r.top+r.height/2, {neg:v<0});
       customInput.value=''; customAbv.value='';
     });
-    undoBtn.addEventListener('click', undoLast);
+    document.getElementById('undoBtn').addEventListener('click', undoLast);
 
     async function addAmount(ml, customAbvPercent=null){
       const user=auth.currentUser; if(!user) return;
@@ -883,7 +891,7 @@
 
     /* ==== Ачивки ==== */
     function onSnapshotOnce(ref){ return new Promise((resolve)=>{ const unsub=onSnapshot(ref,(snap)=>{ resolve(snap); unsub(); },{includeMetadataChanges:false}); }); }
-    function lifetimePure(uid){ return getDocs(query(collectionGroup(db,'users'), where('uid','==',uid))).then(s=>{ let sum=0; s.forEach(d=>{ const x=d.data(); if (x.yearStr && typeof x.total_pure_ml==='number') sum+=Math.max(0,x.total_pure_ml); }); return sum; }); }
+    function lifetimePure(uid){ return getDocs(query(collectionGroup(db,'users'), where('uid','==',uid))).then(s=>{ let sum=0; s.forEach(d=>{ const x=d.data(); if (x.yearStr && typeof x.total_pure_ml==='number') sum+=Math.max(0, x.total_pure_ml); }); return sum; }); }
 
     function subscribeAchievements(){
       if (unsubAch) unsubAch();
@@ -940,7 +948,7 @@
     }
 
     /* ==== Сохранение лимита ==== */
-    saveLimitBtn.addEventListener('click', async ()=>{
+    document.getElementById('saveLimitBtn').addEventListener('click', async ()=>{
       const user = auth.currentUser; if (!user) return;
       const v = parseFloat(limitInput.value);
       if (!Number.isFinite(v) || v<0){ alert('Введите лимит в мл спирта'); return; }
@@ -1029,9 +1037,6 @@
     renderHourChart();
     drawDonut();
     requestAnimationFrame(()=>{ const theme=(localStorage.getItem('theme_alc')||'classic'); applyTheme(theme,'local'); });
-
-    /* ==== Авторизация строки ==== */
-    const userInfo = document.getElementById('userInfo');
   </script>
 </body>
 </html>

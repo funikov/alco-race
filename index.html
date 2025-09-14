@@ -710,7 +710,7 @@
 
       const targetDate = ymdShift(new Date(), dayOffset);
       const { dateStr, monthStr, yearStr } = keysForDate(targetDate);
-      const hour_local = new Date().getHours(); // для вчерашних добавлений: час «как сейчас», чтобы график был честный по твоему времени
+      const hour_local = new Date().getHours();
 
       const batch = writeBatch(db);
       const intakeRef = doc(collection(db,'alc_intakes'));
@@ -876,8 +876,6 @@
     }
 
     /* ==== Синхронизация высот карточек ==== */
-    const donutCard = document.getElementById('donutCard');
-    const insightsCard= document.getElementById('insightsCard');
     function syncHeights(){
       const desktop = window.matchMedia('(min-width: 961px)').matches;
       if (!desktop){ insightsCard.style.height=''; return; }
@@ -923,7 +921,7 @@
         renderHourChart();
         drawDonut();
 
-        // Начисляем ДНЕВНЫЕ ачивки только за «сегодня», чтобы не путать ретро
+        // ДНЕВНЫЕ ачивки только за «сегодня»
         if (dayOffset === 0) {
           await checkDailyAchievementsForToday();
         }
